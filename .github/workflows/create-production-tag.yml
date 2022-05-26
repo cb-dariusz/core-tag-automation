@@ -1,0 +1,42 @@
+name: Create production tag
+on:
+  pull_request_review:
+    branches:
+    # to run this action on approve the best way is to have specific directory for potentially release branches
+      - 'release/**'
+jobs:
+  build-phase:
+    runs-on: ubuntu-latest
+    # this condition will be run only when PR was approved and it comes from specific directory
+    if: ${{ startsWith( github.event.pull_request.base.ref, 'release/' )}}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          java-version: '1.8.0_202-b08'
+      - name: Build with Ant
+        run: ./ant/bin/ant -f appbuild/build.xml
+  merge-phase:
+    needs: build-phase
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Merge new release into master
+        uses: devmasx/merge-branch@master
+        with:
+          type: now
+          target_branch: master
+          github_token: ${{ github.token }}
+  tag-phase:
+    needs: [build-phase, merge-phase]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Bump version and push tag for master branch
+      # needs to set specific owner against repoOwner
+      uses: repoOwner/github-tag-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # needs to set specific owner against repoOwner
+        REPO_OWNER: repoOwner
