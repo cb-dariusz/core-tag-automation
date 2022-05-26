@@ -1,6 +1,7 @@
 name: Create production tag
 on:
-  pull_request_review:
+  issue_comment:
+    types: [created]
     branches:
     # to run this action on approve the best way is to have specific directory for potentially release branches
       - 'release/**'
